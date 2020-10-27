@@ -1,0 +1,27 @@
+#MySQL Config
+mysql_db: "openvpn"
+mysql_root_password: "passroot"
+mysql_user_openvpn: "openvpn"
+mysql_password_openvpn: "openvpnpam"
+
+#easy-rsa
+easy_rsa_ca_expire: 3650
+easy_rsa_clients: []
+easy_rsa_key_city: "SanFrancisco"
+easy_rsa_key_country: "US"
+easy_rsa_key_email: "me@myhost.mydomain"
+easy_rsa_key_expire: 3650
+easy_rsa_key_name: "EasyRSA"
+easy_rsa_key_org: "Fort-Funston"
+easy_rsa_key_ou: "MyOrganizationalUnit"
+easy_rsa_key_province: "CA"
+easy_rsa_key_size: 2048
+
+easyrsa_dest: "easy-rsa"
+
+#openvpn config
+port_openvpn: 1194
+protocol: tcp
+dev: tap
+ip_openvpn: 172.16.0.1
+netmask_openvpn: 255.255.255.0

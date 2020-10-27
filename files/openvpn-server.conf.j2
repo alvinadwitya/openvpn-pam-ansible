@@ -1,0 +1,49 @@
+##protocol port
+port {{port_openvpn}}
+proto {{protocol}}
+dev {{dev}}
+ 
+##ip server client
+server {{ ip_openvpn }} {{ netmask_openvpn }}
+ifconfig-pool-persist ipp.txt
+##key 
+ca /etc/openvpn/keys/ca.crt
+cert /etc/openvpn/keys/server.crt
+key /etc/openvpn/keys/server.key
+dh /etc/openvpn/keys/dh2048.pem
+ 
+##option
+persist-key
+persist-tun
+keepalive 20 120
+reneg-sec 432000
+
+##option authen. 
+user nobody
+group nogroup
+client-to-client
+username-as-common-name
+auth sha1
+verify-client-cert optional
+#client-cert-not-required
+
+plugin /usr/lib/x86_64-linux-gnu/openvpn/plugins/openvpn-plugin-auth-pam.so openvpn
+
+##push to client
+max-clients 50
+persist-key
+persist-tun
+
+script-security 2
+
+# TODO : Skrip untuk Client Connect & Disconnect
+
+
+##DNS-Server 
+push "dhcp-option DNS 8.8.8.8"
+push "dhcp-option DNS 8.8.4.4"
+ 
+##log-status
+status /etc/openvpn/log/udp.log 
+log-append /etc/openvpn/log/openvpn.log
+verb 3

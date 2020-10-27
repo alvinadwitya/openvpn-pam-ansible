@@ -1,0 +1,104 @@
+- hosts: all
+  become: true
+  vars_files:
+    - vars/default.yml
+
+  tasks:
+  Install Packages
+    - name: Install prerequisites
+      apt: name=aptitude update_cache=yes state=latest force_apt_get=yes
+      tags: [ system ]
+
+    - name: Install Openvpn + PAM Modules
+      apt: name={{ item }} update_cache=yes state=latest  
+      loop: [ 'openvpn', 'mysql-server', 'openssl', 'git', 'python3-pymysql', 'easy-rsa','libpam-mysql', 'sasl2-bin']
+      tags: [ system ]
+
+  # MySQL Configuration
+    - name: Set the root password
+      mysql_user:
+        name: root
+        password: "{{ mysql_root_password }}"
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+      tags: [ mysql, mysql-root ]
+    
+    - name: Creates database for Openvpn
+      mysql_db:
+        name: "{{ mysql_db }}"
+        state: present
+        login_user: root
+        login_password: "{{ mysql_root_password }}"
+      tags: [ mysql ]
+
+    - name: Create MySQL user for Openvpn
+      mysql_user:
+        name: "{{ mysql_user_openvpn }}"
+        password: "{{ mysql_password_openvpn }}"
+        priv: "{{ mysql_db }}.*:ALL"
+        state: present
+        login_user: root
+        login_password: "{{ mysql_root_password }}"
+      tags: [ mysql ]
+
+    Config Easy-RSA
+    - name: "Copying easy-rsa Directory"
+      command: cp -r /usr/share/easy-rsa/ /etc/openvpn/{{easyrsa_dest}}
+
+    - name: "Configure easy-rsa"
+      template:
+        src: files/vars.j2
+        dest: "/etc/openvpn/{{easyrsa_dest}}/vars"
+
+    - name: "Configure openssl"
+      template:
+        src: files/openssl-easyrsa.cnf.j2
+        dest: "/etc/openvpn/{{easyrsa_dest}}/openssl.cnf"
+
+    - name: "Prep the keys directory"
+      become: yes
+      shell: ". ./vars; ./clean-all >/dev/null"
+      args:
+        chdir: "/etc/openvpn/{{easyrsa_dest}}"
+        creates: "/etc/openvpn/{{easyrsa_dest}}/index.txt"
+
+    - name: Generate DH file
+      become: yes
+      shell: ". ./vars; ./build-dh >/dev/null"
+      args:
+        chdir: "/etc/openvpn/{{easyrsa_dest}}"
+        creates: "/etc/openvpn/{{easyrsa_dest}}/keys/dh{{easy_rsa_key_size}}.pem"
+      tags:
+        - easy_rsa
+
+    - name: "Build CA"
+      become: yes
+      shell: ". ./vars; ./pkitool --initca >/dev/null"
+      args:
+        chdir: "/etc/openvpn/{{easyrsa_dest}}"
+        creates: "/etc/openvpn/{{easyrsa_dest}}/keys/ca.crt"
+    
+    - name: Generate server certificate and key
+      become: yes
+      shell: ". ./vars; ./pkitool --server server >/dev/null"
+      args:
+        chdir: "/etc/openvpn/{{easyrsa_dest}}"
+        creates: "/etc/openvpn/{{easyrsa_dest}}/keys/server.key"
+      tags:
+        - easy_rsa
+    
+    - name: "Copying keys to openvpn directory"
+      command: cp -r /etc/openvpn/{{easyrsa_dest}}/keys/ /etc/openvpn/
+    
+    Create PAM Configuration
+    - name: Create PAM Configuration
+      template:
+        src: "files/pam-config.j2"
+        dest: "/etc/pam.d/openvpn"
+      tags: [ pam-config ]
+
+    #Openvpn Cnfiguration
+    - name: Copying configuration server file
+      template:
+        src: files/openvpn-server.conf.j2
+        dest: "/etc/openvpn/server/server.conf"
+      tags: [ openvpn ]
