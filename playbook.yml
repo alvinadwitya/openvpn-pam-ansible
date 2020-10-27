@@ -40,7 +40,7 @@
         login_password: "{{ mysql_root_password }}"
       tags: [ mysql ]
 
-    Config Easy-RSA
+    # Config Easy-RSA
     - name: "Copying easy-rsa Directory"
       command: cp -r /usr/share/easy-rsa/ /etc/openvpn/{{easyrsa_dest}}
 
@@ -49,7 +49,7 @@
         src: files/vars.j2
         dest: "/etc/openvpn/{{easyrsa_dest}}/vars"
 
-    - name: "Configure openssl"
+    - name: "Configure openssl"c
       template:
         src: files/openssl-easyrsa.cnf.j2
         dest: "/etc/openvpn/{{easyrsa_dest}}/openssl.cnf"
@@ -89,14 +89,14 @@
     - name: "Copying keys to openvpn directory"
       command: cp -r /etc/openvpn/{{easyrsa_dest}}/keys/ /etc/openvpn/
     
-    Create PAM Configuration
+    # Create PAM Configuration
     - name: Create PAM Configuration
       template:
         src: "files/pam-config.j2"
         dest: "/etc/pam.d/openvpn"
       tags: [ pam-config ]
 
-    #Openvpn Cnfiguration
+    # Openvpn Cnfiguration
     - name: Copying configuration server file
       template:
         src: files/openvpn-server.conf.j2
